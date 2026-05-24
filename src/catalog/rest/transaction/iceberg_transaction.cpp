@@ -392,9 +392,16 @@ void IcebergTransaction::DoTableUpdates(ClientContext &context) {
 		auto transaction_info = GetTransactionRequest(context);
 		auto &transaction = transaction_info.request;
 
+		if (transaction.table_changes.empty()) {
+			updated_tables.clear();
+			DropSecrets(context);
+			return;
+		}
+
 		// if there are no new tables, we can post to the transactions/commit endpoint
 		// otherwise we fall back to posting a commit for each table.
 		if (!transaction_info.has_assert_create &&
+		    catalog.attach_options.use_transaction_commit &&
 		    catalog.supported_urls.find("POST /v1/{prefix}/transactions/commit") != catalog.supported_urls.end()) {
 			// commit all transactions at once
 			std::unique_ptr<yyjson_mut_doc, YyjsonDocDeleter> doc_p(yyjson_mut_doc_new(nullptr));
