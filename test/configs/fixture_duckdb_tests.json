@@ -634,6 +634,7 @@
         "test/sql/join/semianti/semijoin.test",
         "test/sql/limit/parallel_limit_transaction_local.test_slow",
         "test/sql/logging/http_log_timing.test",
+        "test/sql/merge/merge_into_bind_matching_columns.test",
         "test/sql/optimizer/expression/test_common_aggregate.test",
         "test/sql/optimizer/test_window_self_join.test",
         "test/sql/order/order_parallel_ctas.test_slow"
