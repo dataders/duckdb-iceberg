@@ -70,7 +70,7 @@ public:
 	IcebergSnapshotLookup GetSnapshotLookup(IcebergTransaction &iceberg_transaction) const;
 	IcebergSnapshotLookup GetSnapshotLookup(ClientContext &context, optional_ptr<BoundAtClause> at) const;
 	IcebergSnapshotLookup GetSnapshotLookup(ClientContext &context) const;
-	bool TableIsEmpty(const IcebergSnapshotLookup &snapshot_lookup) const;
+	bool TableIsEmpty() const;
 	bool HasTransactionUpdates() const;
 	void InitializeFromLoadTableResult(const rest_api_objects::LoadTableResult &load_table_result,
 	                                   bool initialize_schemas = true);

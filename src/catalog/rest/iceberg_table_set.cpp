@@ -269,6 +269,8 @@ IcebergTableInformation &IcebergTableSet::CreateNewEntry(ClientContext &context,
 		transaction_data.TableAddAssertCreate();
 	}
 	if (!catalog.attach_options.stage_create_tables && catalog.attach_options.skip_create_table_metadata_updates) {
+		// the catalog fully initialized the table on the non-staged create, so no metadata updates are queued
+		iceberg_transaction.SetLatestTableState(table_info, IcebergTableStatus::ALIVE);
 		return table_info;
 	}
 	// other required updates to the table

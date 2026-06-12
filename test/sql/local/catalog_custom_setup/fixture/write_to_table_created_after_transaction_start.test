@@ -1,0 +1,82 @@
+# name: test/sql/local/catalog_custom_setup/fixture/write_to_table_created_after_transaction_start.test
+# description: a transaction can write to an empty table that was created after the transaction started
+# group: [fixture]
+
+require-env FIXTURE_SERVER_AVAILABLE
+
+require avro
+
+require parquet
+
+require iceberg
+
+require httpfs
+
+set ignore_error_messages
+
+statement ok
+CREATE SECRET (
+    TYPE S3,
+    KEY_ID 'admin',
+    SECRET 'password',
+    ENDPOINT '127.0.0.1:9000',
+    URL_STYLE 'path',
+    USE_SSL 0
+);
+
+statement ok
+ATTACH '' AS my_datalake (
+    TYPE ICEBERG,
+    CLIENT_ID 'admin',
+    CLIENT_SECRET 'password',
+    ENDPOINT 'http://127.0.0.1:8181'
+);
+
+statement ok
+CREATE SCHEMA IF NOT EXISTS my_datalake.default;
+
+statement ok
+DROP TABLE IF EXISTS my_datalake.default.created_mid_transaction;
+
+statement ok
+DROP TABLE IF EXISTS my_datalake.default.existing_table;
+
+statement ok
+CREATE TABLE my_datalake.default.existing_table (id INT);
+
+# force the snapshot lookup path instead of the metadata log
+statement ok con1
+SET iceberg_use_metadata_log = false;
+
+statement ok con1
+BEGIN;
+
+# pin con1's transaction start time by touching the catalog
+query I con1
+SELECT count(*) FROM my_datalake.default.existing_table;
+----
+0
+
+# a concurrent connection creates an empty table after con1's transaction started
+statement ok con2
+CREATE TABLE my_datalake.default.created_mid_transaction (id INT, label VARCHAR);
+
+# con1 can write to the empty table even though its metadata is newer than the
+# transaction start; an empty table has no snapshot to be outdated from.
+# This used to fail with "Table ... is already outdated. Please restart your transaction"
+statement ok con1
+INSERT INTO my_datalake.default.created_mid_transaction VALUES (42, 'written mid transaction');
+
+statement ok con1
+COMMIT;
+
+query II
+SELECT * FROM my_datalake.default.created_mid_transaction;
+----
+42	written mid transaction
+
+statement ok
+DROP TABLE IF EXISTS my_datalake.default.created_mid_transaction;
+
+statement ok
+DROP TABLE IF EXISTS my_datalake.default.existing_table;
