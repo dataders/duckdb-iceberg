@@ -34,6 +34,18 @@ CREATE SECRET (
     USE_SSL 0
 );
 
+# skip_create_table_metadata_updates only applies to non-staged creates
+statement error
+ATTACH '' AS bad_datalake (
+    TYPE ICEBERG,
+    CLIENT_ID 'admin',
+    CLIENT_SECRET 'password',
+    ENDPOINT 'http://127.0.0.1:8181',
+    skip_create_table_metadata_updates true
+);
+----
+'skip_create_table_metadata_updates' only applies to non-staged creates, it requires 'stage_create_tables false'
+
 statement ok
 ATTACH '' AS my_datalake (
     TYPE ICEBERG,
@@ -71,6 +83,13 @@ query I
 select count(*) from duckdb_logs_parsed('HTTP') where request.url like '%/transactions/commit%';
 ----
 0
+
+# the writes go through per-table commits instead of the multi-table transactions/commit endpoint
+query I
+select count(*) > 0 from duckdb_logs_parsed('HTTP') where request.type = 'POST'
+  and request.url like '%/namespaces/default/tables/test_horizon_compatible_writes';
+----
+true
 
 statement ok
 drop table if exists my_datalake.default.test_horizon_compatible_writes;

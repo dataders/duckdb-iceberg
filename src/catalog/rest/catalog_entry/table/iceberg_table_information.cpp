@@ -557,12 +557,8 @@ IcebergSnapshotLookup IcebergTableInformation::GetSnapshotLookup(ClientContext &
 	return res;
 }
 
-bool IcebergTableInformation::TableIsEmpty(const IcebergSnapshotLookup &snapshot_lookup) const {
-	(void)snapshot_lookup;
-	if (!table_metadata.GetLatestSnapshot()) {
-		return true;
-	}
-	return false;
+bool IcebergTableInformation::TableIsEmpty() const {
+	return !table_metadata.GetLatestSnapshot();
 }
 
 bool IcebergTableInformation::HasTransactionUpdates() const {
@@ -644,10 +640,10 @@ IcebergTableInformation IcebergTableInformation::Copy(IcebergTransaction &iceber
 
 		const bool can_use_metadata_log = use_metadata_log && !table_metadata.metadata_log.empty();
 		if (!can_use_metadata_log) {
-			auto snapshot_lookup = GetSnapshotLookup(iceberg_transaction);
-			if (ret.TableIsEmpty(snapshot_lookup)) {
+			if (ret.TableIsEmpty()) {
 				return ret;
 			}
+			auto snapshot_lookup = GetSnapshotLookup(iceberg_transaction);
 			IcebergSnapshotScanInfo snapshot_info;
 			snapshot_info = ret.table_metadata.GetSnapshot(snapshot_lookup);
 			if (!snapshot_info.snapshot) {

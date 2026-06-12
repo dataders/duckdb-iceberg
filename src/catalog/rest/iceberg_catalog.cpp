@@ -554,9 +554,11 @@ unique_ptr<Catalog> IcebergCatalog::Attach(optional_ptr<StorageExtensionInfo> st
 		} else if (lower_name == "disable_multi_table_commit") {
 			attach_options.disable_multi_table_commit =
 			    entry.second.DefaultCastAs(LogicalType::BOOLEAN).GetValue<bool>();
+			set_by_attach_options.insert("disable_multi_table_commit");
 		} else if (lower_name == "skip_create_table_metadata_updates") {
 			attach_options.skip_create_table_metadata_updates =
 			    entry.second.DefaultCastAs(LogicalType::BOOLEAN).GetValue<bool>();
+			set_by_attach_options.insert("skip_create_table_metadata_updates");
 		} else if (lower_name == "remove_files_on_delete") {
 			attach_options.remove_files_on_delete = entry.second.DefaultCastAs(LogicalType::BOOLEAN).GetValue<bool>();
 			set_by_attach_options.insert("remove_files_on_delete");
@@ -603,6 +605,12 @@ unique_ptr<Catalog> IcebergCatalog::Attach(optional_ptr<StorageExtensionInfo> st
 		default:
 			throw InternalException("Endpoint type (%s) not implemented", endpoint_type_string);
 		}
+	}
+
+	if (attach_options.skip_create_table_metadata_updates && attach_options.stage_create_tables) {
+		throw InvalidConfigurationException(
+		    "'skip_create_table_metadata_updates' only applies to non-staged creates, it requires "
+		    "'stage_create_tables false'");
 	}
 
 	//! Then check the authorization type
